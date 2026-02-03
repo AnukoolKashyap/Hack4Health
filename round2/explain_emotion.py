@@ -22,7 +22,7 @@ def configure_api() -> bool:
 def generate_explanation(poem_text: str, 
                          primary_emotion: str, 
                          secondary_emotions: List[str], 
-                         model_name: str = 'gemini-1.5-flash') -> str:
+                         model_name: str = 'gemini-2.5-flash') -> str:
     """
     Generates a qualitative explanation for why the given emotions fit the poem
     using a Large Language Model (LLM).
@@ -76,20 +76,35 @@ Start your response with: "**LLM-generated qualitative explanation:**"
 Then provide the analysis in plain text.
     """
 
-    # 3. Call API
-    try:
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content(prompt)
-        
-        # 4. Return Result
-        if response.text:
-            return response.text
-        else:
-            return "[Error: Empty response from LLM.]"
+    # 3. Call API with Retry Logic
+    import time
+    from google.api_core import exceptions
+    
+    max_retries = 3
+    retry_delay = 5  # Start with 5 seconds
 
-    except Exception as e:
-        # Basic error handling to ensure pipeline doesn't crash
-        return f"[Error: Failed to generate explanation. Details: {str(e)}]"
+    for attempt in range(max_retries):
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            
+            # 4. Return Result
+            if response.text:
+                return response.text
+            else:
+                return "[Error: Empty response from LLM.]"
+
+        except exceptions.ResourceExhausted:
+            if attempt < max_retries - 1:
+                print(f"Rate limited (429). Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                return "[Error: Rate limit exceeded. Please try again later.]"
+        
+        except Exception as e:
+            # Basic error handling
+            return f"[Error: Failed to generate explanation. Details: {str(e)}]"
 
 # --- Example Usage (for testing) ---
 if __name__ == "__main__":
