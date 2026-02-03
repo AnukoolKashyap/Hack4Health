@@ -1,6 +1,6 @@
 {
     "accuracy": 0.28606060606060607,
-    "weighted_f1": 0.1468665003378554,
     "weighted_precision": 0.1323590661816014,
-    "weighted_recall": 0.28606060606060607
+    "weighted_recall": 0.28606060606060607,
+    "weighted_f1": 0.1468665003378554
 }
